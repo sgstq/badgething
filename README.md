@@ -6,6 +6,11 @@
 Tiny macOS menu-bar app that mirrors Dock badges (e.g. Slack unread count) for any
 app you pick. Single-purpose analog of [Badgeify](https://badgeify.app).
 
+### Warning
+<p align="center">
+  <b>ALL CODE AND SCRIPTS IN THIS REPOSITORY—EVEN THOSE BASED ON REAL DOCUMENTATION—ARE ENTIRELY EXPERIMENTAL. ALL LOGIC WAS HALLUCINATED BY MATRIX MULTIPLICATIONS….. HAPHAZARDLY. THE FOLLOWING REPOSITORY CONTAINS UNTESTED CODE AND DUE TO ITS CONTENT IT SHOULD NOT BE USED ANYWHERE BY ANYONE ■</b>
+</p>
+
 ## Install
 
 **Download the latest DMG:** [BadgeThing.dmg](https://github.com/sgstq/badgething/releases/latest/download/BadgeThing.dmg)
