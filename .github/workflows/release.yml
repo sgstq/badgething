@@ -1,34 +1,98 @@
 name: Release
 
 on:
+  pull_request:
+    types: [closed]
+    branches: [main]
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump (used when no tag is pushed)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  release:
+    # Skip PR closures that weren't merged
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && 'main' || github.ref }}
+          fetch-depth: 0
 
-      - name: Print toolchain
+      - name: Determine release version
+        id: ver
         run: |
-          swift --version
-          xcodebuild -version
+          set -euo pipefail
+          EVENT="${{ github.event_name }}"
 
-      - name: Inject version from tag
-        if: startsWith(github.ref, 'refs/tags/v')
+          if [[ "$EVENT" == "push" ]]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+            SHOULD="true"
+            REASON="tag push"
+          else
+            if [[ "$EVENT" == "workflow_dispatch" ]]; then
+              KIND="${{ inputs.bump }}"
+              REASON="manual dispatch ($KIND)"
+            else
+              LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+              if   echo "$LABELS" | grep -q '"bump:major"'; then KIND="major"
+              elif echo "$LABELS" | grep -q '"bump:minor"'; then KIND="minor"
+              elif echo "$LABELS" | grep -q '"bump:skip"';  then KIND="skip"
+              else KIND="patch"
+              fi
+              REASON="PR #${{ github.event.pull_request.number }} merged ($KIND)"
+            fi
+
+            if [[ "$KIND" == "skip" ]]; then
+              SHOULD="false"
+              VERSION=""
+              TAG=""
+            else
+              LATEST=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+              CURRENT="${LATEST#v}"
+              [[ -z "$CURRENT" ]] && CURRENT="0.0.0"
+              IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+              case "$KIND" in
+                major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+                minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+                patch) PATCH=$((PATCH+1)) ;;
+              esac
+              VERSION="$MAJOR.$MINOR.$PATCH"
+              TAG="v$VERSION"
+              SHOULD="true"
+            fi
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
+          echo "should=$SHOULD"   >> "$GITHUB_OUTPUT"
+          echo ""
+          echo "▶ $REASON"
+          echo "▶ next: tag=$TAG version=$VERSION should_release=$SHOULD"
+
+      - name: Inject version into Info.plist
+        if: steps.ver.outputs.should == 'true'
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          echo "Setting bundle version to $VERSION"
+          VERSION="${{ steps.ver.outputs.version }}"
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Resources/Info.plist
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION"            Resources/Info.plist
 
       - name: Import Developer ID certificate
-        if: env.CERT_P12 != ''
+        if: steps.ver.outputs.should == 'true' && env.CERT_P12 != ''
         env:
           CERT_P12: ${{ secrets.DEVELOPER_ID_APP_CERT_P12_BASE64 }}
           CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_APP_CERT_PASSWORD }}
@@ -52,7 +116,7 @@ jobs:
           rm -f "$CERT_PATH"
 
       - name: Store notarytool credentials
-        if: env.APPLE_ID != ''
+        if: steps.ver.outputs.should == 'true' && env.APPLE_ID != ''
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -64,22 +128,22 @@ jobs:
             --password "$APPLE_APP_PWD"
 
       - name: Build & package
+        if: steps.ver.outputs.should == 'true'
         env:
           DEVELOPER_ID_APP: ${{ secrets.DEVELOPER_ID_APP_IDENTITY }}
           NOTARY_PROFILE: ${{ secrets.APPLE_ID != '' && 'ci' || '' }}
         run: ./release.sh
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: BadgeThing-${{ github.ref_name }}
-          path: BadgeThing.dmg
-          if-no-files-found: error
-
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.ver.outputs.should == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
           files: BadgeThing.dmg
           generate_release_notes: true
           fail_on_unmatched_files: true
+
+      - name: Skip notice
+        if: steps.ver.outputs.should != 'true'
+        run: echo "Skipping release (bump:skip or non-merge event)."
