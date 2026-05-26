@@ -1,0 +1,8 @@
+.build/
+.swiftpm/
+Package.resolved
+BadgeThing.app/
+*.xcodeproj/
+*.dmg
+.dmg-staging/
+.DS_Store
