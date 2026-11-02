@@ -15,7 +15,7 @@ if [[ ! -f "$BUILT_BIN" ]]; then
     exit 1
 fi
 
-echo "→ Bundling into $APP…"
+echo "→ Bundling into ${APP}…"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
