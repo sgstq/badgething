@@ -14,7 +14,7 @@ Pick an app, like Slack, Mail or Messages. Its unread badge shows up next to the
 
 <br />
 
-<img src="assets/screenshots/hero.png" width="820" alt="A Mac menu bar with BadgeThing items: a chat app like Slack showing 3 unread, a mail app showing a dot, and a dimmed calendar with no badge" />
+<img src="assets/screenshots/hero.png" width="820" alt="A Mac menu bar with BadgeThing items: Slack showing 3 unread, Mail showing a dot, and a dimmed Calendar with no badge" />
 
 </div>
 
