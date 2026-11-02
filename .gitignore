@@ -6,3 +6,7 @@ BadgeThing.app/
 *.dmg
 .dmg-staging/
 .DS_Store
+
+# Site (Cloudflare Workers)
+site/node_modules/
+site/.wrangler/
