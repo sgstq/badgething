@@ -66,16 +66,20 @@ final class StatusItemController: NSObject {
         }
     }
 
+    // Open via LaunchServices like a Dock click: a running app gets a reopen
+    // event, so apps whose windows were closed (Slack's red ×) show one again.
+    // NSRunningApplication.activate only fronts the app, and since macOS 14
+    // the system may refuse it from a non-active menu bar app.
     private func activateApp() {
-        if let running = NSRunningApplication
-            .runningApplications(withBundleIdentifier: app.bundleID).first {
-            running.activate(options: .activateIgnoringOtherApps)
-        } else {
-            NSWorkspace.shared.openApplication(
-                at: URL(fileURLWithPath: app.path),
-                configuration: NSWorkspace.OpenConfiguration(),
-                completionHandler: nil)
+        if #available(macOS 14.0, *) {
+            NSApp.yieldActivation(toApplicationWithBundleIdentifier: app.bundleID)
         }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.openApplication(
+            at: URL(fileURLWithPath: app.path),
+            configuration: config,
+            completionHandler: nil)
     }
 
     private func showMenu() {
