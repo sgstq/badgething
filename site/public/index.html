@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BadgeThing — Dock badges, in your menu bar.</title>
+<meta name="description" content="BadgeThing is a tiny macOS menu-bar app that mirrors any app's Dock badge next to the clock. Hide the Dock, keep the unread count. Free and open source." />
+<link rel="canonical" href="https://badgething.app/" />
+<link rel="icon" href="/favicon.png" type="image/png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#121214" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="BadgeThing" />
+<meta property="og:title" content="BadgeThing — Dock badges, in your menu bar." />
+<meta property="og:description" content="A tiny macOS menu-bar app that mirrors any app's Dock badge next to the clock. Hide the Dock, keep the unread count." />
+<meta property="og:url" content="https://badgething.app/" />
+<meta property="og:image" content="https://badgething.app/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #121214;
+    --surface: #1b1b1f;
+    --surface-2: #242429;
+    --ink: #f4f4f6;
+    --ink-soft: #b1b1ba;
+    --ink-faint: #7b7b86;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.14);
+    --accent: #ff453a;
+    --accent-hover: #ff5a50;
+    --accent-ink: #ffffff;
+    --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --max: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; height: auto; }
+  .wrap { width: min(var(--max), 100% - 2rem); margin: 0 auto; }
+  h1, h2, h3 { margin: 0; letter-spacing: -0.02em; line-height: 1.1; font-weight: 600; }
+  p { margin: 0; }
+  kbd {
+    display: inline-block;
+    font-family: var(--font);
+    font-size: 0.85em;
+    font-weight: 600;
+    padding: 0.1em 0.55em 0.15em;
+    border-radius: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 1.5px 0 var(--line-strong);
+    vertical-align: 0.05em;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.3rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+  .btn-secondary:hover { border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.03); }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+  .btn small { font-weight: 500; opacity: 0.75; font-size: 0.85em; }
+
+  /* nav */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    background: rgba(18, 18, 20, 0.72);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 600; font-size: 1.05rem; }
+  .brand img { width: 28px; height: 28px; }
+  .nav-links { display: flex; align-items: center; gap: 1.6rem; font-size: 0.95rem; color: var(--ink-soft); }
+  .nav-links a:hover { color: var(--ink); }
+  .nav .btn { padding: 0.55rem 1rem; font-size: 0.9rem; }
+  @media (max-width: 720px) { .nav-links a:not(.btn) { display: none; } }
+
+  /* hero */
+  .hero { position: relative; padding: 5.5rem 0 3rem; text-align: center; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -40% -20% auto; height: 120%; pointer-events: none;
+    background: radial-gradient(60% 50% at 50% 10%, rgba(255, 69, 58, 0.14), transparent 70%);
+  }
+  .hero > * { position: relative; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.85rem; font-weight: 500; color: var(--ink-soft);
+    padding: 0.35rem 0.85rem; border-radius: 999px; border: 1px solid var(--line-strong);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .hero h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 1.4rem 0 1.1rem; letter-spacing: -0.035em; }
+  .hero h1 span { color: var(--ink-faint); }
+  .hero .lede { font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--ink-soft); max-width: 40rem; margin: 0 auto; }
+  .cta { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 2rem; }
+  .req { margin-top: 1rem; font-size: 0.85rem; color: var(--ink-faint); }
+
+  /* demo: a live menu bar */
+  .demo { margin: 3.5rem auto 0; width: min(880px, 100%); }
+  .screen {
+    position: relative; overflow: hidden; border-radius: 14px; height: 250px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+    background:
+      radial-gradient(70% 90% at 15% 110%, #5a3d8f 0%, transparent 60%),
+      radial-gradient(60% 70% at 90% 20%, #2b4d8a 0%, transparent 60%),
+      linear-gradient(160deg, #1a1f33 0%, #2a2340 55%, #18121f 100%);
+    text-align: left;
+  }
+  .menubar {
+    position: absolute; top: 0; left: 0; right: 0; height: 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 10px 0 14px; color: #fff; font-size: 13.5px; font-weight: 500; white-space: nowrap;
+    background: rgba(28, 28, 32, 0.62);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  }
+  .menubar .left, .menubar .right { display: flex; align-items: center; height: 100%; }
+  .menubar .left > span { padding: 0 9px; }
+  .menubar .left .app { font-weight: 700; }
+  .menubar .apple { width: 15px; height: 18px; margin-right: 6px; }
+  .menubar .right > span { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 5px; }
+  .menubar .right svg { width: 18px; height: 18px; }
+  .menubar .clock { padding-left: 10px; padding-right: 4px; }
+  .bt { gap: 3px; transition: opacity 0.4s ease, background 0.2s ease; }
+  .bt .ic { width: 18px; height: 18px; display: inline-block; }
+  .bt .ic svg { width: 18px; height: 18px; display: block; }
+  .bt .count { font-weight: 600; font-size: 13px; min-width: 0.6em; text-align: left; }
+  .bt.quiet { opacity: 0.45; }
+  .bt.flash { background: rgba(255, 255, 255, 0.18); }
+  .bt .count.pop { animation: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1); }
+  @keyframes pop { 0% { transform: scale(0.6); } 100% { transform: scale(1); } }
+  .caption {
+    position: absolute; left: 0; right: 0; bottom: 1.4rem; text-align: center;
+    color: rgba(255, 255, 255, 0.62); font-size: 0.95rem; font-weight: 500; padding: 0 1rem;
+  }
+  .caption b { color: #fff; font-weight: 600; }
+  @media (max-width: 720px) { .menubar .left > span:not(.app) { display: none; } .screen { height: 210px; } }
+  .hint { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.2rem; font-size: 0.9rem; color: var(--ink-faint); }
+
+  /* sections */
+  section { padding: 5.5rem 0; }
+  section + section { border-top: 1px solid var(--line); }
+  .section-head { max-width: 38rem; margin-bottom: 3rem; }
+  .section-head h2 { font-size: clamp(1.9rem, 4vw, 2.6rem); margin-bottom: 0.9rem; }
+  .section-head p { color: var(--ink-soft); font-size: 1.1rem; }
+  .label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.9rem; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+  .step { position: relative; padding: 1.8rem 1.6rem 1.6rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+  .step .num { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 1.4rem; }
+  .step h3 { font-size: 1.35rem; margin-bottom: 0.5rem; }
+  .step p { color: var(--ink-soft); font-size: 0.98rem; }
+  .step .glyph { height: 56px; display: flex; align-items: center; margin-bottom: 0.5rem; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; background: rgba(28, 28, 32, 0.9); border: 1px solid var(--line-strong); font-size: 1rem; font-weight: 600; color: #fff; }
+  .pill svg { width: 20px; height: 20px; }
+  .pill.quiet { opacity: 0.45; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem 2.5rem; }
+  .feature h3 { font-size: 1.1rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.6rem; }
+  .feature h3 svg { width: 20px; height: 20px; color: var(--accent); flex: none; }
+  .feature p { color: var(--ink-soft); font-size: 0.97rem; }
+  .feature { padding: 1.4rem 0; border-top: 1px solid var(--line); }
+
+  .shots { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; align-items: start; }
+  .shot { border-radius: 14px; overflow: hidden; border: 1px solid var(--line-strong); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); background: var(--surface); }
+  .shot img { width: 100%; }
+  .shot-cap { margin-top: 0.8rem; font-size: 0.9rem; color: var(--ink-faint); text-align: center; }
+
+  .privacy { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+  .privacy ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.9rem; }
+  .privacy li { display: flex; gap: 0.8rem; color: var(--ink-soft); }
+  .privacy li svg { width: 22px; height: 22px; color: var(--accent); flex: none; margin-top: 0.1em; }
+  .privacy li strong { color: var(--ink); display: block; font-weight: 600; }
+
+  .download { text-align: center; padding: 6rem 0; }
+  .download .icon { width: 96px; height: 96px; margin: 0 auto 1.6rem; filter: drop-shadow(0 20px 40px rgba(255, 69, 58, 0.25)); }
+  .download h2 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 0.8rem; }
+  .download p { color: var(--ink-soft); max-width: 34rem; margin: 0 auto; }
+  .download .note { margin-top: 1.2rem; font-size: 0.9rem; color: var(--ink-faint); }
+  .download .src { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-faint); }
+  .download .src a { color: var(--ink-soft); border-bottom: 1px solid var(--line-strong); }
+  .download .src a:hover { color: var(--ink); }
+  .download code { font-family: var(--mono); font-size: 0.85em; background: var(--surface); padding: 0.15em 0.45em; border-radius: 5px; border: 1px solid var(--line); }
+
+  footer { border-top: 1px solid var(--line); padding: 2rem 0 2.5rem; font-size: 0.9rem; color: var(--ink-faint); }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  footer nav { display: flex; gap: 1.4rem; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 860px) {
+    .steps, .features { grid-template-columns: 1fr; }
+    .features { gap: 0; }
+    .shots, .privacy { grid-template-columns: 1fr; }
+    section { padding: 4rem 0; }
+    .hero { padding-top: 4rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .bt .count.pop { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="/icon.png" alt="" width="28" height="28" /> BadgeThing</a>
+    <nav class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy</a>
+      <a href="https://github.com/sgstq/badgething">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/sgstq/badgething/releases/latest/download/BadgeThing.dmg">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow"><span class="dot"></span> A menu-bar app for macOS</span>
+      <h1>Dock badges,<br /><span>in your menu bar.</span></h1>
+      <p class="lede">Pick an app. Its unread badge shows up next to the clock, so you can hide the Dock and still know when something needs you.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/sgstq/badgething/releases/latest/download/BadgeThing.dmg">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.65c-.03-2.6 2.13-3.86 2.22-3.92-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.95-3.95.95-.81 0-2.07-.93-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.46 7.83 1.31 10.4.87 1.25 1.9 2.66 3.25 2.61 1.3-.05 1.8-.84 3.37-.84 1.57 0 2.02.84 3.4.81 1.4-.02 2.29-1.27 3.15-2.53 1-1.45 1.4-2.86 1.43-2.93-.03-.01-2.74-1.05-2.74-4.2zM13.78 5.01c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.29.69-3.03 1.56-.66.77-1.25 2-1.09 3.18 1.15.09 2.33-.58 3.05-1.45z"/></svg>
+          Download for macOS <small data-version></small>
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/sgstq/badgething">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <p class="req">Free and open source · Apple Silicon · macOS 13 or later</p>
+
+      <div class="demo" aria-hidden="true">
+        <div class="screen">
+          <div class="menubar">
+            <div class="left">
+              <svg class="apple" viewBox="0 0 24 24" fill="#fff"><path d="M16.37 12.65c-.03-2.6 2.13-3.86 2.22-3.92-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.95-3.95.95-.81 0-2.07-.93-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.46 7.83 1.31 10.4.87 1.25 1.9 2.66 3.25 2.61 1.3-.05 1.8-.84 3.37-.84 1.57 0 2.02.84 3.4.81 1.4-.02 2.29-1.27 3.15-2.53 1-1.45 1.4-2.86 1.43-2.93-.03-.01-2.74-1.05-2.74-4.2zM13.78 5.01c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.29.69-3.03 1.56-.66.77-1.25 2-1.09 3.18 1.15.09 2.33-.58 3.05-1.45z"/></svg>
+              <span class="app">Finder</span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
+            </div>
+            <div class="right">
+              <span class="bt" id="btChat"><i class="ic"><svg viewBox="0 0 36 36"><rect width="36" height="36" rx="9" fill="#5b4fcf"/><path d="M10 11h16a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-7l-5 4v-4h-4a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3z" fill="#fff"/></svg></i><b class="count" id="chatCount">3</b></span>
+              <span class="bt" id="btMail"><i class="ic"><svg viewBox="0 0 36 36"><rect width="36" height="36" rx="9" fill="#2f7cf6"/><rect x="7" y="11" width="22" height="15" rx="3" fill="#fff"/><path d="M8 13l10 7 10-7" stroke="#2f7cf6" stroke-width="2" fill="none"/></svg></i><b class="count" id="mailCount">•</b></span>
+              <span class="bt quiet" id="btCal"><i class="ic"><svg viewBox="0 0 36 36"><rect width="36" height="36" rx="9" fill="#ff3b30"/><rect x="8" y="12" width="20" height="16" rx="3" fill="#fff"/><rect x="8" y="9" width="20" height="6" rx="2" fill="#fff"/><rect x="11" y="17" width="4" height="4" fill="#ff3b30"/><rect x="17" y="17" width="4" height="4" fill="#ff3b30"/></svg></i><b class="count" id="calCount"></b></span>
+              <span><svg viewBox="0 0 30 14" fill="none" style="width:26px;height:13px"><rect x="1" y="1" width="24" height="12" rx="3.5" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.4"/><rect x="2.8" y="2.8" width="18" height="8.4" rx="2" fill="currentColor"/><path d="M27 5v4a2 2 0 0 0 0-4z" fill="currentColor" fill-opacity="0.5"/></svg></span>
+              <span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 19.5a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4zM12 13.6c1.9 0 3.6.8 4.9 2.1l1.4-1.4A8.9 8.9 0 0 0 12 11.7a8.9 8.9 0 0 0-6.3 2.6l1.4 1.4a6.9 6.9 0 0 1 4.9-2.1zm0-4.2c3.1 0 5.9 1.3 7.9 3.3l1.4-1.4A13.1 13.1 0 0 0 12 7.4a13.1 13.1 0 0 0-9.3 3.9l1.4 1.4a11 11 0 0 1 7.9-3.3z"/></svg></span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg></span>
+              <span class="clock" id="clock">9:41</span>
+            </div>
+          </div>
+          <p class="caption" id="caption">A <b>count</b> for chat, a <b>dot</b> for mail, and the calendar <b>dims</b> while it has nothing to say.</p>
+        </div>
+      </div>
+      <p class="hint">A preview. On your Mac, each item follows a real app's Dock badge.</p>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">How it works</div>
+        <h2>That's the whole app.</h2>
+        <p>No window to open, no Dock icon of its own. BadgeThing sits in the menu bar and keeps an eye on the Dock for you.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="num">01</div>
+          <div class="glyph"><span class="pill">+ Badge</span></div>
+          <h3>Add</h3>
+          <p>Click <b>+ Badge</b> in the menu bar and pick any app from your Applications folder.</p>
+        </div>
+        <div class="step">
+          <div class="num">02</div>
+          <div class="glyph"><span class="pill"><svg viewBox="0 0 36 36"><rect width="36" height="36" rx="9" fill="#5b4fcf"/><path d="M10 11h16a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-7l-5 4v-4h-4a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3z" fill="#fff"/></svg> 3</span></div>
+          <h3>Watch</h3>
+          <p>BadgeThing reads the badge off the app's Dock tile a few times a second and mirrors it as a count or a dot.</p>
+        </div>
+        <div class="step">
+          <div class="num">03</div>
+          <div class="glyph"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-7 1-4 7z"/></svg> Open</span></div>
+          <h3>Click</h3>
+          <p>Left-click brings the app forward, like clicking its Dock icon. Right-click for the menu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">Features</div>
+        <h2>Everything you'd want. Nothing you wouldn't.</h2>
+        <p>Badges only live in the Dock, and the Dock is the first thing most people hide. BadgeThing puts them where you're already looking.</p>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Any app</h3>
+          <p>Slack, Mail, Messages, Discord, Telegram, Calendar. If it puts a badge on its Dock icon, BadgeThing can show it.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="3"/><path d="M14 9h7M14 15h5"/></svg>Count or dot</h3>
+          <p>Show the number, or just a dot when there is something new. Pick per app from the right-click menu.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/><path d="M12 3v18" stroke-dasharray="2 3"/></svg>Quiet when quiet</h3>
+          <p>When an app has no badge its item dims instead of disappearing, so the menu bar never jumps around.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/></svg>One item per app</h3>
+          <p>Watch as many apps as you like. Each gets its own icon in the menu bar, with its own style.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-7 1-4 7z"/></svg>Opens like the Dock</h3>
+          <p>A click brings the app forward and reopens its window if you had closed it.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>Launch at login</h3>
+          <p>One toggle in the menu, using the system login-items API. Nothing hidden in your Library.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8M8 16h5"/></svg>Remembers your list</h3>
+          <p>Watched apps and their badge style survive restarts.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>Light on your Mac</h3>
+          <p>A few kilobytes of Swift, no window, no network, almost no CPU.</p>
+        </div>
+        <div class="feature">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>Open source</h3>
+          <p>Plain AppKit, built with Swift Package Manager. Read the code, file an issue, or build it yourself.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="mac">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">Made for the menu bar</div>
+        <h2>Looks like it was always there.</h2>
+        <p>A native status item with the app's own icon, and a standard macOS menu behind a right-click.</p>
+      </div>
+      <div class="shots">
+        <div>
+          <div class="shot"><img src="/menu.webp" alt="BadgeThing right-click menu with Open, Badge style, Remove from menu bar, Add app, Launch at login and Quit" width="1280" height="600" loading="lazy" /></div>
+          <p class="shot-cap">Right-click any item for its menu</p>
+        </div>
+        <div>
+          <div class="shot"><img src="/empty.webp" alt="The + Badge placeholder item shown before any app is added" width="1280" height="320" loading="lazy" /></div>
+          <p class="shot-cap">Before you add anything, a single + Badge item waits</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <div class="privacy">
+        <div class="section-head" style="margin-bottom:0">
+          <div class="label">Privacy</div>
+          <h2>It reads the Dock. Nothing else.</h2>
+          <p>BadgeThing never touches the network. The only thing it looks at is the badge text on Dock tiles.</p>
+        </div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>No network</strong>There is no code in the app that makes a request. Nothing to send, nowhere to send it.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>Accessibility, for one reason</strong>macOS exposes Dock badges only through Accessibility. That is why it asks, and all it reads.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>Nothing stored but your list</strong>Which apps you watch, and whether each shows a count or a dot. Kept in the app's own preferences.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>No account, no telemetry</strong>Download it, run it, forget it is there.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="download" id="download">
+    <div class="wrap">
+      <img class="icon" src="/icon.png" alt="" width="96" height="96" />
+      <h2>Hide the Dock.</h2>
+      <p>Download the DMG, drag BadgeThing into Applications, and allow Accessibility access when macOS asks. Then click + Badge and pick an app.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/sgstq/badgething/releases/latest/download/BadgeThing.dmg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>
+          Download for macOS <small data-version></small>
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/sgstq/badgething/releases">All releases</a>
+      </div>
+      <p class="req">Requires macOS 13 or later on Apple Silicon.</p>
+      <p class="note">If macOS says it can't verify the developer, open System Settings → Privacy &amp; Security and click <b>Open Anyway</b>. An app has to be running, or kept in the Dock, to have a badge at all.</p>
+      <p class="src">Prefer to build it yourself? Clone <a href="https://github.com/sgstq/badgething">sgstq/badgething</a> and run <code>./release.sh</code>.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 BadgeThing. Open source on GitHub.</span>
+    <nav>
+      <a href="https://github.com/sgstq/badgething">Source</a>
+      <a href="https://github.com/sgstq/badgething/releases">Releases</a>
+      <a href="https://github.com/sgstq/badgething/issues">Issues</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Latest release: show the version next to the download buttons.
+  fetch('https://api.github.com/repos/sgstq/badgething/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (rel) {
+      if (!rel || !rel.tag_name) return;
+      document.querySelectorAll('[data-version]').forEach(function (el) { el.textContent = rel.tag_name; });
+    })
+    .catch(function () {});
+
+  // Menu bar clock.
+  var clock = document.getElementById('clock');
+  function tick() {
+    var d = new Date();
+    var h = d.getHours() % 12 || 12;
+    var m = d.getMinutes();
+    clock.textContent = h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  tick(); setInterval(tick, 15000);
+
+  // Hero demo: badges change the way they do on a real Mac.
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+  var chat = document.getElementById('btChat'), chatCount = document.getElementById('chatCount');
+  var mail = document.getElementById('btMail'), mailCount = document.getElementById('mailCount');
+  var cal = document.getElementById('btCal'), calCount = document.getElementById('calCount');
+  var caption = document.getElementById('caption');
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function pop(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  function setCount(item, el, value) {
+    el.textContent = value;
+    item.classList.toggle('quiet', !value);
+    if (value) pop(el);
+  }
+  async function run() {
+    var n = 3;
+    for (;;) {
+      await sleep(2600);
+      n += 1; setCount(chat, chatCount, String(n));
+      caption.innerHTML = 'A new message arrived. The <b>count</b> moves with the Dock badge.';
+      await sleep(2400);
+      setCount(cal, calCount, '•');
+      caption.innerHTML = 'The calendar got something. Its item <b>lights up</b>.';
+      await sleep(2400);
+      chat.classList.add('flash');
+      caption.innerHTML = '<b>Click</b> to open the app, like clicking its Dock icon.';
+      await sleep(500);
+      chat.classList.remove('flash');
+      setCount(chat, chatCount, '');
+      await sleep(2000);
+      setCount(cal, calCount, '');
+      setCount(mail, mailCount, '');
+      caption.innerHTML = 'All read. Items <b>dim</b> instead of disappearing, so nothing jumps around.';
+      await sleep(3000);
+      n = 1 + Math.floor(Math.random() * 4);
+      setCount(chat, chatCount, String(n));
+      setCount(mail, mailCount, '•');
+      caption.innerHTML = 'A <b>count</b> for chat, a <b>dot</b> for mail, and the calendar <b>dims</b> while it has nothing to say.';
+    }
+  }
+  run();
+})();
+</script>
+</body>
+</html>
