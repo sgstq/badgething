@@ -6,7 +6,7 @@
 
 ### Dock badges, in your menu bar.
 
-Pick an app. Its unread badge shows up next to the clock, so you can hide the Dock and still know when something needs you.
+Pick an app, like Slack, Mail or Messages. Its unread badge shows up next to the clock, so you can hide the Dock and still know when something needs you.
 
 [![Download BadgeThing](https://img.shields.io/badge/Download_for_macOS-E5281C?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/sgstq/badgething/releases/latest/download/BadgeThing.dmg)
 
@@ -14,7 +14,7 @@ Pick an app. Its unread badge shows up next to the clock, so you can hide the Do
 
 <br />
 
-<img src="assets/screenshots/hero.png" width="820" alt="A Mac menu bar with BadgeThing items: a chat app showing 3, a mail app showing a dot, and a dimmed calendar with no badge" />
+<img src="assets/screenshots/hero.png" width="820" alt="A Mac menu bar with BadgeThing items: a chat app like Slack showing 3 unread, a mail app showing a dot, and a dimmed calendar with no badge" />
 
 </div>
 
@@ -30,8 +30,8 @@ No window. No Dock icon of its own. It just sits in the menu bar.
 <tr>
 <td width="33%" valign="top">
 
-**Any app**<br />
-Slack, Mail, Messages, Discord, Telegram, Calendar. If it puts a badge on its Dock icon, BadgeThing can show it.
+**Slack, and any other app**<br />
+Slack is what most people add first. Mail, Messages, Discord, Telegram, Teams, Calendar work the same way. If it puts a badge on its Dock icon, BadgeThing can show it.
 
 </td>
 <td width="33%" valign="top">
@@ -57,12 +57,18 @@ When an app has no badge, its item dims instead of disappearing, so the menu bar
 
 That's the whole app.
 
+## Slack unread count in the menu bar
+
+The most common reason to install BadgeThing. Add Slack, choose **Count**, and the number of unread messages sits next to your clock while the Dock stays hidden. Click it to jump to Slack. If you closed Slack's window with the red button, the click reopens it, the way a Dock click would.
+
+It is the same for any other app that badges its Dock icon: Discord, Mail, Messages, Telegram, WhatsApp, Microsoft Teams, Calendar, Reminders.
+
 ## Made for the menu bar
 
 <table>
 <tr>
 <td width="58%" valign="top">
-<img src="assets/screenshots/menu.png" alt="BadgeThing right-click menu with Open, Badge style, Remove from menu bar, Add app, Launch at login and Quit" />
+<img src="assets/screenshots/menu.png" alt="BadgeThing right-click menu for Slack with Open Slack, Badge style, Remove from menu bar, Add app, Launch at login and Quit" />
 </td>
 <td width="42%" valign="top">
 <img src="assets/screenshots/empty.png" alt="The + Badge placeholder item shown before any app is added" />
@@ -88,7 +94,7 @@ BadgeThing never touches the network. It reads badge text from the Dock through 
 
 ## Install
 
-**[Download the latest DMG](https://github.com/sgstq/badgething/releases/latest/download/BadgeThing.dmg)**, open it and drag **BadgeThing** into Applications. On first launch, allow Accessibility access when macOS asks (System Settings → Privacy & Security → Accessibility), then click **+ Badge** and pick an app.
+**[Download the latest DMG](https://github.com/sgstq/badgething/releases/latest/download/BadgeThing.dmg)**, open it and drag **BadgeThing** into Applications. On first launch, allow Accessibility access when macOS asks (System Settings → Privacy & Security → Accessibility), then click **+ Badge** and pick Slack, or any other app.
 
 If macOS says it can't verify the developer, open System Settings → Privacy & Security, scroll down and click **Open Anyway**.
 
