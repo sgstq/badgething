@@ -19,7 +19,7 @@ mkdir -p "$STAGING"
 cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 
-echo "→ Building $DMG…"
+echo "→ Building ${DMG}…"
 hdiutil create \
     -volname "$VOLNAME" \
     -srcfolder "$STAGING" \
